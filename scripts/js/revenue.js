@@ -1,24 +1,37 @@
 const { ApiPromise, WsProvider, Keyring } = require('@polkadot/api');
 const BN = require('bn.js');
+const Decimal = require('decimal.js');
 const khala_typedefs = require('@phala/typedefs').khalaDev;
 
-const bn1e12 = new BN(10).pow(new BN(12));
+const bnh64bits = new BN('FFFFFFFFFFFFFFFF0000000000000000', 16);
+const bnl64bits = new BN('FFFFFFFFFFFFFFFF', 16);
 
-async function getSettleInfo(api, hash) {
-    const msgs = (await api.query.phalaMq.outboundMessages.at(hash)).toJSON();
-    for(const msg of msgs) {
-        try {
-            console.log(`Payload of msg: ${msg.payload}, destination: ${msg.destination}`);
-            const miningInfo = aip.createType('MiningInfoUpdateEvent', msg.payload).toJSON();
-            return miningInfo.settle;
-        } catch(e) {
-            continue;
-        }
-    }
-    return null;
+async function getMiningPayout(api, hash) {
+    return new Promise(async (resolve) => {
+        api.query.system.events.at(hash, (events) => {
+            let totalRewards = new Decimal(0.0);
+
+            for (const record of events) {
+                const { event, phase } = record;
+
+                if (event.section === 'phalaMining' && event.method === 'MinerSettled') {
+                    // data[0]: miner,
+                    // data[1]: v,
+                    // data[2]: payout,
+                    let payout = event.data[2];
+                    let a = new BN(payout.toString()).and(bnh64bits).shrn(64);
+                    let b = new BN(payout.toString()).and(bnl64bits);
+                    let strPayout = a.toString() + '.' + b.toString();
+                    totalRewards = totalRewards.add(new Decimal(strPayout));
+                }
+            };
+            
+            resolve(totalRewards.toString());
+        });
+    });
 }
 
-async function main() {
+async function main() { 
     const provider = new WsProvider('wss://khala.api.onfinality.io/public-ws');
     const api = await ApiPromise.create({
         provider: provider,
@@ -108,9 +121,8 @@ async function main() {
     });
 
     const unsubscribe = await api.rpc.chain.subscribeFinalizedHeads(async (header) => {
-        const settleInfo = await getSettleInfo(api, header.hash);
-        console.log(`=> SettleInfo in block[${header.number}]: ${JSON.stringify(settleInfo, null, 4)}`);
-        if (settleInfo !== null) process.exit();
+        const payout = await getMiningPayout(api, header.hash);
+        console.log(`Total mining payout of block ${header.number} is: ${payout}`);
     });
 
     const exitHandler = (options, exitCode) => {
