@@ -18,3 +18,51 @@ use frame_support::traits::OnRuntimeUpgrade;
 // The final decision is to just skip the pre_upgrade checks. We have carefully checked all the
 // pre_upgrade checks and confirmed that only the prefix checks are skipped. All the other checks
 // are still performed in an offline try-runtime test.
+
+pub struct HrmpTest;
+
+impl OnRuntimeUpgrade for HrmpTest {
+    /// Execute some pre-checks prior to a runtime upgrade.
+	///
+	/// This hook is never meant to be executed on-chain but is meant to be used by testing tools.
+	#[cfg(feature = "try-runtime")]
+	fn pre_upgrade() -> Result<(), &'static str> {
+
+		log::warn!("HrmpTest");
+
+        let asset: MultiAsset = (MultiLocation::new(0, Here), 1_000_000_000_00).into();
+        pallt_xcm::Pallet::<super::Runtime>::send(
+            Origin::root(),
+            Box::new(MultiLocation::new(1, Here)),
+            Box::new(VersionedXcm::v2(
+                Xcm(vec![
+                    WithdrawAsset(vec![asset.clone()].into()),
+                    BuyExecution {
+                        fees: asset.clone(),
+                        weight_limit: WeightLimit::Limited(1_000_000_000),
+			        },
+                    Transact {
+                        origin_type: OriginKind::Native,
+                        require_weight_at_most: 1_000_000_000,
+                        call: hex_literal::hex!("1802083c01d10700003c00d1070000e803000000900100").to_vec().into(),
+                    },
+                    RefundSurplus,
+                    DepositAsset {
+                        assets: Wild(All),
+                        max_assets: 1,
+                        beneficiary: MultiLocation::new(0, X1(Parachain(2004))),
+                    },
+				])),
+        )).unwrap();
+
+		Ok(())
+	}
+
+	/// Execute some post-checks after a runtime upgrade.
+	///
+	/// This hook is never meant to be executed on-chain but is meant to be used by testing tools.
+	#[cfg(feature = "try-runtime")]
+	fn post_upgrade() -> Result<(), &'static str> {
+		Ok(())
+	}
+}
