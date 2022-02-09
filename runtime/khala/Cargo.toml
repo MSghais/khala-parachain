@@ -63,6 +63,7 @@ pallet-elections-phragmen = { git = "https://github.com/paritytech/substrate", b
 pallet-tips = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.16", default-features = false }
 pallet-preimage = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.16", default-features = false }
 pallet-assets = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.16", default-features = false }
+pallet-sudo = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.16", default-features = false }
 
 # Cumulus dependencies
 pallet-collator-selection = { git = "https://github.com/paritytech/cumulus", branch = "polkadot-v0.9.16", default-features = false }
@@ -190,6 +191,7 @@ std = [
 	"phala-pallets/std",
 	"pallet-mq-runtime-api/std",
 	"xtransfer-pallets/std",
+	"pallet-sudo/std",
 ]
 
 try-runtime = [
@@ -220,4 +222,5 @@ try-runtime = [
 	"pallet-tips/try-runtime",
 	"pallet-preimage/try-runtime",
  	"phala-pallets/try-runtime",
+	"pallet-sudo/try-runtime",
 ]

@@ -106,6 +106,8 @@ pub use frame_system::Call as SystemCall;
 #[cfg(any(feature = "std", test))]
 pub use pallet_balances::Call as BalancesCall;
 #[cfg(any(feature = "std", test))]
+pub use pallet_sudo::Call as SudoCall;
+#[cfg(any(feature = "std", test))]
 pub use pallet_timestamp::Call as TimestampCall;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
@@ -259,7 +261,7 @@ construct_runtime! {
         AssetsWrapper: pallet_assets_wrapper::{Pallet, Call, Storage, Event<T>} = 90,
 
         // `sudo` has been removed on production
-        // Sudo: pallet_sudo::{Pallet, Call, Storage, Config<T>, Event<T>} = 99,
+        Sudo: pallet_sudo::{Pallet, Call, Storage, Config<T>, Event<T>} = 99,
         // `OTT` has been removed, the index should be kept
         // PhalaOneshotTransfer: pallet_ott::{Pallet, Call, Event<T>, Storage} = 100,
     }
@@ -290,6 +292,7 @@ impl Contains<Call> for BaseCallFilter {
 
         matches!(
             call,
+            Call::Sudo { .. } |
             // System
             Call::System { .. } | Call::Timestamp { .. } | Call::Utility { .. } |
             Call::Multisig { .. } | Call::Proxy { .. } | Call::Scheduler { .. } |
@@ -742,6 +745,11 @@ impl pallet_lottery::Config for Runtime {
     type ValidateCall = Lottery;
     type MaxGenerateRandom = MaxGenerateRandom;
     type WeightInfo = pallet_lottery::weights::SubstrateWeight<Runtime>;
+}
+
+impl pallet_sudo::Config for Runtime {
+    type Call = Call;
+    type Event = Event;
 }
 
 parameter_types! {
