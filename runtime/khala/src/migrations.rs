@@ -3,6 +3,8 @@ use super::*;
 #[allow(unused_imports)]
 use frame_support::traits::OnRuntimeUpgrade;
 
+use xcm::latest::prelude::*;
+
 // Note to "late-migration":
 //
 // All the migrations defined in this file are so called "late-migration". We should have done the
@@ -31,10 +33,10 @@ impl OnRuntimeUpgrade for HrmpTest {
 		log::warn!("HrmpTest");
 
         let asset: MultiAsset = (MultiLocation::new(0, Here), 1_000_000_000_00).into();
-        pallt_xcm::Pallet::<super::Runtime>::send(
+        let result = pallet_xcm::pallet::Pallet::<super::Runtime>::send(
             Origin::root(),
-            Box::new(MultiLocation::new(1, Here)),
-            Box::new(VersionedXcm::v2(
+            Box::new(xcm::VersionedMultiLocation::V1(MultiLocation::new(1, Here))),
+            Box::new(xcm::VersionedXcm::V2(
                 Xcm(vec![
                     WithdrawAsset(vec![asset.clone()].into()),
                     BuyExecution {
@@ -53,7 +55,9 @@ impl OnRuntimeUpgrade for HrmpTest {
                         beneficiary: MultiLocation::new(0, X1(Parachain(2004))),
                     },
 				])),
-        )).unwrap();
+        ));
+
+        log::warn!("Result: {:?}", result);
 
 		Ok(())
 	}
